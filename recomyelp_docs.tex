@@ -93,7 +93,35 @@ Recommendation will be extracted by this matrix, typically by extracting for a g
 
 
 \subsection{Implementation}
-% TODO
+The review matrix is implemented as a Spark dataframe.
+Since it is very sparse the dataframe consists of triples $(u,b,s)$, where $u$ is an user ID, $b$ is a business ID, and $s$ is the number of stars of the review of business $b$ by user $u$.
+The partial matrix is therefore an abstraction of the dataframe where for each triple $u$ is the row index, $b$ is the column index and $s$ is the value of the entry.
+
+In order to populate the utility matrix all at once, we proceed to calculate the cosine distance for every pair of user vectors (i.e. rows in the ideal matrix).
+To do that, we apply a series of dataframe operations, similar to the classic relational algebra operations. The Spark infrastructure implements these operations on the distributed filesystem via the Map-Reduce paradigm.
+Since a proper distance measure (such as the cosine distance) is symmetric, we only need to calculate the distance between two users once:
+\begin{enumerate}
+	\item we build a dataframe of user pairs with every pair of reviews for a same business. Each tuple $(u_1,u_2,b,s_1,s_2)$ contains the two users $u_1$ and $u_2$, the considered business $b$, and the respective two reviews (stars) $s_1$ and $s_2$;
+	\item we calculate the product of each pair $s_1,s_2$ and sum each product from a pair $u_1,u_2$ (via a groupBy operation), effectively obtaining the dot product $p$ between the two vectors $u_1,u_2$. Notice that the missing entries would produce a $0$ addend and are therefore irrelevant;
+	\item on a separate flow we calculate the second norm $n$ of each user vector, by taking the square root of the sum of the squared $s$ values from the original dataframe;
+	\item we now have all the ingredients to calculate the cosine distance $d$ for each pair of users, by joining the dot product dataframe with the norm one two times and taking, for each pair of users, the ratio $\frac{p}{n_1\cdot n_2}$ between the dot product and the product of the two norms.
+\end{enumerate}
+
+We then build a dataframe of tuples $u_1,u_2,r$, where $r$ is the closeness rank of user $u_2$ with respect to user $u_1$.
+In order to do that, we add the symmetric distances (that is, we add in the distance dataframe a tuple $u_2,u_1,d$ for each tuple $u_1,u_2,d$) and use the partition operation of Spark to effectively sort, for each user, every other user by distance; then we take the rank of such user.
+We can keep the first $n$ neighbors for each user via a simple filter operation.
+
+Finally, we can calculate the prediction for each utility matrix entry, by joining the rank dataframe with the original review one and calculating, for each pair $u,b$ of a user and a business, the mean of the reviews of its $n$ closest neighbors.
+
+As a final tweak we restore the original entries in place of the predictions for the values we already had in the original review dataframe, by using an outer join followed by a coalesce operation.
+
+
+\subsection{Normalization}
+In order to make the prediction algorithm independent by the bias of the single user, we can normalize the initial matrix with the average number of stars for each user.
+This produces a matrix where the star number is a possibly negative number which represents the difference from the average rating for the user.
+
+After a first implementation, the project applies normalization and repeats the process, ensuring to denormalize at the end (that is, adding back the average rating to the predictions to make the numbers meaningful).
+The results may contain values outside the domain of stars, which may be removed or kept for more significance, but are in general less prone to the bias of the single user.
 
 
 \label{evaluation}
