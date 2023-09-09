@@ -31,25 +31,38 @@
 
 
 \section{Introduction}
+Recommender systems are an increasingly important feature in nowadays technological and economical development.
+This project implements the most common base algorithm for recommending products, collaborative filtering, by applying it to a dataset from Yelp, a crowd-sourced platform for reviews about businesses in the USA and Canada areas.
+The project is implemented as an interactive Python Jupyter notebook\footnote{\url{https://jupyter.org/}} and is built on the Spark engine\footnote{\url{https://spark.apache.org/}}.
+It is meant to be run over an underlying distributed filesystem (e.g. HDFS) and it is potentially scalable.
+
+The project is of course meant to be a \emph{proof of concept}, and would need many tweaks in order to be used in a production environment, however it shows (we hope) the fundamental logic behind the algorithm.
+
+In this project report we go over the project setup (section \ref{setup}), the theory and the implementation of the algorithm (section \ref{collabfiltering}), the obtained results and their evaluation (section \ref{evaluation}), discuss the scalability aspects (section \ref{scalability}) and finally an overview of possible improvements and ideas (section \ref{futurework}).
 
 
 
+\label{setup}
 \section{Dataset and setup}
 
 
 
+\label{collabfiltering}
 \section{Collaborative filtering}
 
 
 
+\label{evaluation}
 \section{Results and evaluation}
 
 
 
+\label{scalability}
 \section{Scalability}
 
 
 
+\label{futurework}
 \section{Future work}
 
 
