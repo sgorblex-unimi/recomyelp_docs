@@ -147,9 +147,16 @@ We obtain relatively big errors of $???$ for the original version and $???$ for 
 
 
 \subsection{Test set}
+A more traditional approach on evaluating our results is to compare the predictions with the actual labels of a test set.
+For this purpose we kept part of the original dataset at the beginning (see section \ref{setup}).
+For both the original and the normalized version, we build a dataframe with both the predictions and the actual stars (by joining the test set dataframe with the utility matrix), then we compute an error measure as RMSE.
+We obtain errors of $???$ for the original version and $???$ for the normalized version.
+
 
 
 \subsection{Conclusions}
+Our evaluation suggests that our algorithm has to be executed with a larger training set in order for it to obtain better results.
+Considering the relatively small size of the training set (and the sparsity of the matrix), the result is still representative of the functionality of the algorithm in predicting user reviews.
 
 
 
