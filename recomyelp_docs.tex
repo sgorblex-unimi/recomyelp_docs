@@ -75,7 +75,25 @@ Before the actual execution of the algorithm, two actions are performed for data
 
 \label{collabfiltering}
 \section{Collaborative filtering}
+Multiple approaches for recommender systems exist, but the state of the art always includes some kind of collaborative filtering.
+Collaborative filtering is a technique consisting in predicting the degree of appreciation of a user for a product by using the collected data on users which are considered similar.
+There are many ways of considering two users similar, but the simplest include some kind of distance measure over their reviews.
 
+
+\subsection{Theory}
+In our case, we build a partial review matrix, which contains all the given reviews (number of stars) for businesses by the various users.
+In order to predict a missing entry for the review by user $u$ for business $b$, we do the following:
+\begin{enumerate}
+	\item calculate some kind of distance between the review vectors of $u$ and every other user (e.g. cosine distance);
+	\item consider the closest $n$ neighbors of $u$;
+	\item calculate the review prediction, which is defined as the average of the reviews for business $b$ from the afore mentioned neighbors.
+\end{enumerate}
+By repeating the process (or, better, calculating it at the same time) for every $(u,b)$ pair we populate the so called utility matrix.
+Recommendation will be extracted by this matrix, typically by extracting for a given user the businesses with the most predicted stars.
+
+
+\subsection{Implementation}
+% TODO
 
 
 \label{evaluation}
