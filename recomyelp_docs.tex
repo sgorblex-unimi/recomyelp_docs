@@ -162,6 +162,10 @@ Considering the relatively small size of the training set (and the sparsity of t
 
 \label{scalability}
 \section{Scalability}
+Scalability in the project is guaranteed by the usage of the Spark infrastructure.
+The dataframe operations we call via the Python API (pyspark) are performed via the RDD (Resilient Distributed Dataset) data structure, heavily based on the Map-Reduce paradigm.
+Spark is intended to be natively executed on distributed filesystems such as HDFS (Hadoop Distributed FileSystem).
+The project could be run on many computing nodes in a parallel fashion, therefore being able to run on much larger datasets.
 
 
 
