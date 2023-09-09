@@ -126,6 +126,30 @@ The results may contain values outside the domain of stars, which may be removed
 
 \label{evaluation}
 \section{Results and evaluation}
+The result, for both the classic and normalized version, is a fully populated\footnote{except when there's insufficient data, e.g. users with no reviews} utility matrix.
+The recommendation themselves can be extracted by simply taking the businesses with the most predicted stars for a given user, or even viceversa\footnote{It can in fact be useful to know to what users recommend a fixed product}.
+Depending on the usage, it might be necessary to exclude from the recommendations for a user the businesses which have been already reviewed by them.
+
+In order to evaluate the performance of our algorithm, we propose two methods of evaluation: a comparison with a library recommendation system, called ALS (Alternating Least Squares), and an error calculation with respect to a test set, which we previously selected.
+
+The results that we mention were obtained by an execution of the project with the default parameters:
+\begin{itemize}
+	\item \code{limit\_data} set to $150 000$;
+	\item \code{n} set to $100$;
+	\item \code{split\_ratio} set to $[1.5, 0.5]$ (so $100 000$ datapoints for training and $50 000$ for evaluation).
+\end{itemize}
+
+
+\subsection{Comparison with ALS}
+Alternating Least Squares \footnote{\url{https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.recommendation.ALS.html}} is a technique of collaborative filtering which uses matrix decomposition.
+We apply ALS to the original dataset and compare its results to ours, for both the original and normalized versions, by calculating the RMSE (Root Mean Square Error).
+We obtain relatively big errors of $???$ for the original version and $???$ for the normalized version, although keep in mind that this error is with respect to another prediction algorithm, and not to the correct labels.
+
+
+\subsection{Test set}
+
+
+\subsection{Conclusions}
 
 
 
