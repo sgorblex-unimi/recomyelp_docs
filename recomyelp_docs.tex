@@ -33,17 +33,16 @@
 \section{Introduction}
 Recommender systems are an increasingly important feature in nowadays technological and economical development.
 This project implements the most common base algorithm for recommending products, collaborative filtering, by applying it to a dataset from Yelp, a crowd-sourced platform for reviews about businesses in the USA and Canada areas.
-The project is implemented as an interactive Python Jupyter notebook\footnote{\url{https://jupyter.org/}} and is built on the Spark engine\footnote{\url{https://spark.apache.org/}}.
-It is meant to be run over an underlying distributed filesystem (e.g. HDFS) and it is potentially scalable.
+The project is implemented as an interactive Python Jupyter notebook\footnote{\url{https://jupyter.org/}} and built on the Spark engine\footnote{\url{https://spark.apache.org/}}.
+It is meant to be run on a distributed filesystem (e.g. HDFS) and it is potentially scalable.
 
 The project is of course meant to be a \emph{proof of concept}, and would need many tweaks in order to be used in a production environment, however it shows (we hope) the fundamental logic behind the algorithm.
 
-In this project report we go over the project setup (section \ref{setup}), the theory and the implementation of the algorithm (section \ref{collabfiltering}), the obtained results and their evaluation (section \ref{evaluation}), discuss the scalability aspects (section \ref{scalability}) and finally an overview of possible improvements and ideas (section \ref{futurework}).
+In this project report we go over the project setup (section \ref{setup}), the theory and the implementation of the algorithm (section \ref{collabfiltering}), the obtained results and their evaluation (section \ref{evaluation}), the scalability aspects (section \ref{scalability}) and finally an overview of possible improvements and ideas (section \ref{futurework}).
 
 
 
-\label{setup}
-\section{Dataset and setup}
+\section{Dataset and setup}\label{setup}
 
 
 \subsection{Dataset version}
@@ -58,23 +57,22 @@ When executing the notebook, the user initially uploads their Kaggle API key (\v
 Moreover, the user may tweak the execution parameters:
 \begin{itemize}
 	\item \code{limit\_data}, which limits the number of entries of the dataset that will be considered;
-	\item \code{n}, the number of neighbors that will be considered when populating the utility matrix (more in section \ref{collabfiltering});
+	\item \code{n}, the number of neighbors that will be considered when populating the utility matrix (more on this in section \ref{collabfiltering});
 	\item \code{split\_ratio}, the parameter which regulates how to divide training and test sets in order to evaluate the algorithm performance.
 \end{itemize}
-Data limitation is necessary if the computational resources of the underlying system are limited (e.g. free Google Colab plan), however the project itself could potentially run on the entire dataset (more in section \ref{scalability}).
+Data limitation is necessary if the computational resources of the underlying system are limited (e.g. free Google Colab plan), however the project itself could potentially run on the entire dataset (see section \ref{scalability}).
 
 
 \subsection{Data preprocessing}
 Before the actual execution of the algorithm, two actions are performed for data preprocessing:
 \begin{enumerate}
 	\item a serialization of the IDs, both for users and businesses, in order to construct lighter tables in the following steps. This is done using the \code{StringIndexer} feature of Spark;
-	\item split the loaded data into train and test sets, as regulated by the \code{split\_ratio} parameter.
+	\item a split of the loaded data into train and test sets, as regulated by the \code{split\_ratio} parameter.
 \end{enumerate}
 
 
 
-\label{collabfiltering}
-\section{Collaborative filtering}
+\section{Collaborative filtering}\label{collabfiltering}
 Multiple approaches for recommender systems exist, but the state of the art always includes some kind of collaborative filtering.
 Collaborative filtering is a technique consisting in predicting the degree of appreciation of a user for a product by using the collected data on users which are considered similar.
 There are many ways of considering two users similar, but the simplest include some kind of distance measure over their reviews.
@@ -86,10 +84,10 @@ In order to predict a missing entry for the review by user $u$ for business $b$,
 \begin{enumerate}
 	\item calculate some kind of distance between the review vectors of $u$ and every other user (e.g. cosine distance);
 	\item consider the closest $n$ neighbors of $u$;
-	\item calculate the review prediction, which is defined as the average of the reviews for business $b$ from the afore mentioned neighbors.
+	\item calculate the review prediction, which is defined as the average of the reviews for business $b$ by the afore mentioned neighbors.
 \end{enumerate}
-By repeating the process (or, better, calculating it at the same time) for every $(u,b)$ pair we populate the so called utility matrix.
-Recommendation will be extracted by this matrix, typically by extracting for a given user the businesses with the most predicted stars.
+By repeating the process (or, better, calculating it at the same time) for every $(u,b)$ pair we populate the so called \emph{utility matrix}.
+Recommendation will be extracted by this matrix, typically by retrieving for a given user the businesses with the most predicted stars.
 
 
 \subsection{Implementation}
@@ -98,7 +96,7 @@ Since it is very sparse the dataframe consists of triples $(u,b,s)$, where $u$ i
 The partial matrix is therefore an abstraction of the dataframe where for each triple $u$ is the row index, $b$ is the column index and $s$ is the value of the entry.
 
 In order to populate the utility matrix all at once, we proceed to calculate the cosine distance for every pair of user vectors (i.e. rows in the ideal matrix).
-To do that, we apply a series of dataframe operations, similar to the classic relational algebra operations. The Spark infrastructure implements these operations on the distributed filesystem via the Map-Reduce paradigm.
+To do that, we apply a series of dataframe operations, similar to the classic relational algebra ones. The Spark infrastructure implements these operations on the underlying distributed filesystem via the Map-Reduce paradigm.
 Since a proper distance measure (such as the cosine distance) is symmetric, we only need to calculate the distance between two users once:
 \begin{enumerate}
 	\item we build a dataframe of user pairs with every pair of reviews for a same business. Each tuple $(u_1,u_2,b,s_1,s_2)$ contains the two users $u_1$ and $u_2$, the considered business $b$, and the respective two reviews (stars) $s_1$ and $s_2$;
@@ -107,8 +105,8 @@ Since a proper distance measure (such as the cosine distance) is symmetric, we o
 	\item we now have all the ingredients to calculate the cosine distance $d$ for each pair of users, by joining the dot product dataframe with the norm one two times and taking, for each pair of users, the ratio $\frac{p}{n_1\cdot n_2}$ between the dot product and the product of the two norms.
 \end{enumerate}
 
-We then build a dataframe of tuples $u_1,u_2,r$, where $r$ is the closeness rank of user $u_2$ with respect to user $u_1$.
-In order to do that, we add the symmetric distances (that is, we add in the distance dataframe a tuple $u_2,u_1,d$ for each tuple $u_1,u_2,d$) and use the partition operation of Spark to effectively sort, for each user, every other user by distance; then we take the rank of such user.
+We then build a dataframe of tuples $(u_1,u_2,r)$, where $r$ is the closeness rank of user $u_2$ with respect to user $u_1$.
+In order to do that, we add the symmetric distances (that is, we add in the distance dataframe a tuple $(u_2,u_1,d)$ for each tuple $(u_1,u_2,d)$) and use the partition operation of Spark to effectively sort, for each user, every other user by distance; then we take the rank of such user.
 We can keep the first $n$ neighbors for each user via a simple filter operation.
 
 Finally, we can calculate the prediction for each utility matrix entry, by joining the rank dataframe with the original review one and calculating, for each pair $u,b$ of a user and a business, the mean of the reviews of its $n$ closest neighbors.
@@ -117,51 +115,49 @@ As a final tweak we restore the original entries in place of the predictions for
 
 
 \subsection{Normalization}
-In order to make the prediction algorithm independent by the bias of the single user, we can normalize the initial matrix with the average number of stars for each user.
+In order to make the prediction algorithm independent from the bias of the single user, we can normalize the initial matrix with the average number of stars for each user.
 This produces a matrix where the star number is a possibly negative number which represents the difference from the average rating for the user.
 
 After a first implementation, the project applies normalization and repeats the process, ensuring to denormalize at the end (that is, adding back the average rating to the predictions to make the numbers meaningful).
 The results may contain values outside the domain of stars, which may be removed or kept for more significance, but are in general less prone to the bias of the single user.
 
 
-\label{evaluation}
-\section{Results and evaluation}
-The result, for both the classic and normalized version, is a fully populated\footnote{except when there's insufficient data, e.g. users with no reviews} utility matrix.
-The recommendation themselves can be extracted by simply taking the businesses with the most predicted stars for a given user, or even viceversa\footnote{It can in fact be useful to know to what users recommend a fixed product}.
+\section{Results and evaluation}\label{evaluation}
+The result, for both the classic and normalized version, is a fully populated\footnote{Except when there's insufficient data, e.g. users with no reviews} utility matrix.
+The recommendation themselves can be extracted by simply taking the businesses with the most predicted stars for a given user, or even vice versa\footnote{It can in fact be useful to know to what users recommend a fixed product}.
 Depending on the usage, it might be necessary to exclude from the recommendations for a user the businesses which have been already reviewed by them.
 
 In order to evaluate the performance of our algorithm, we propose two methods of evaluation: a comparison with a library recommendation system, called ALS (Alternating Least Squares), and an error calculation with respect to a test set, which we previously selected.
 
 The results that we mention were obtained by an execution of the project with the default parameters:
 \begin{itemize}
-	\item \code{limit\_data} set to $150 000$;
+	\item \code{limit\_data} set to $150,000$;
 	\item \code{n} set to $100$;
-	\item \code{split\_ratio} set to $[1.5, 0.5]$ (so $100 000$ datapoints for training and $50 000$ for evaluation).
+	\item \code{split\_ratio} set to $[1.5, 0.5]$ (so $100,000$ data points for training and $50,000$ for evaluation).
 \end{itemize}
 
 
 \subsection{Comparison with ALS}
 Alternating Least Squares \footnote{\url{https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.recommendation.ALS.html}} is a technique of collaborative filtering which uses matrix decomposition.
 We apply ALS to the original dataset and compare its results to ours, for both the original and normalized versions, by calculating the RMSE (Root Mean Square Error).
-We obtain relatively big errors of $???$ for the original version and $???$ for the normalized version, although keep in mind that this error is with respect to another prediction algorithm, and not to the correct labels.
+We obtain relatively big errors of $2.64$ for the original version and $2.70$ for the normalized version, although keep in mind that this error is with respect to another prediction algorithm, and not to the correct labels.
 
 
 \subsection{Test set}
 A more traditional approach on evaluating our results is to compare the predictions with the actual labels of a test set.
 For this purpose we kept part of the original dataset at the beginning (see section \ref{setup}).
 For both the original and the normalized version, we build a dataframe with both the predictions and the actual stars (by joining the test set dataframe with the utility matrix), then we compute an error measure as RMSE.
-We obtain errors of $???$ for the original version and $???$ for the normalized version.
+We obtain errors of $1.26$ for the original version and $1.37$ for the normalized version.
 
 
 
 \subsection{Conclusions}
 Our evaluation suggests that our algorithm has to be executed with a larger training set in order for it to obtain better results.
-Considering the relatively small size of the training set (and the sparsity of the matrix), the result is still representative of the functionality of the algorithm in predicting user reviews.
+However, considering the relatively small size of the training set (and the sparsity of the matrix), the result is still representative of the functionality of the algorithm in predicting user reviews.
 
 
 
-\label{scalability}
-\section{Scalability}
+\section{Scalability}\label{scalability}
 Scalability in the project is guaranteed by the usage of the Spark infrastructure.
 The dataframe operations we call via the Python API (pyspark) are performed via the RDD (Resilient Distributed Dataset) data structure, heavily based on the Map-Reduce paradigm.
 Spark is intended to be natively executed on distributed filesystems such as HDFS (Hadoop Distributed FileSystem).
@@ -169,21 +165,22 @@ The project could be run on many computing nodes in a parallel fashion, therefor
 
 
 
-\label{futurework}
-\section{Future work}
+\section{Future work}\label{futurework}
 Many improvements and variations can be implemented.
 
-First of all, we may want to use other data on users and businesses to filter recommendations.
+First of all, tweaks to the interface could be implemented, for example by adding a function which returns a number of recommendations for a given user, by reading the utility matrix and converting back the serialized IDs.
+
+Second, we may want to use other data on users and businesses to filter recommendations.
 For example, do not recommend to a user a business which is located very far away from the user's base location, or do not process at all permanently closed businesses.
 
-Second, we might tweak our distance measure and its processing.
+Third, we might tweak our distance measure and its processing.
 For example we could choose a complex distance which even uses the data from the users (e.g. users from the same city are considered more similar), and we could count  as neighbors only the users within a certain distance.
 More generally, we want the distance measure to be meaningful and the number of outliers to be low.
 
 Finally, other algorithms can be implemented.
-Generalizations of our approach include U/V decomposition, which uses lower dimensional matrices that approximate the review matrix alongside the missing entries.
-This algorithm also reduces the time complexity needed for the recommender system itself.
-Moreover, different paradigms can be considered, especially content based recommendation, which analyses the data on the business that a user liked in order to individuate similar ones.
+Generalizations of our approach include U/V decomposition, which uses lower dimensional matrices the product of which approximates the review matrix alongside the missing entries.
+This algorithm also reduces the space complexity needed for the recommender system itself.
+Moreover, different paradigms can be considered, especially \emph{content based} recommendation, which analyses the data on the business that a user liked in order to individuate similar ones.
 In the latter approach it could be crucial to implement a \emph{similar items} system.
 
 
