@@ -46,6 +46,32 @@ In this project report we go over the project setup (section \ref{setup}), the t
 \section{Dataset and setup}
 
 
+\subsection{Dataset version}
+The Yelp dataset is provided by Kaggle\footnote{\url{https://www.kaggle.com/datasets/yelp-dataset/yelp-dataset}} and the version used for the analysis is version 4, although the project itself is set to automatically download the latest version.
+As of the current version of the project, the only table used from the dataset is the one with the reviews.
+Other tables may be used to extract data about the users or the businesses.
+For example one may want to know the address of a recommended business.
+
+
+\subsection{Parameters}
+When executing the notebook, the user initially uploads their Kaggle API key (\verb!kaggle.json!), which will be used to download the data.
+Moreover, the user may tweak the execution parameters:
+\begin{itemize}
+	\item \code{limit\_data}, which limits the number of entries of the dataset that will be considered;
+	\item \code{n}, the number of neighbors that will be considered when populating the utility matrix (more in section \ref{collabfiltering});
+	\item \code{split\_ratio}, the parameter which regulates how to divide training and test sets in order to evaluate the algorithm performance.
+\end{itemize}
+Data limitation is necessary if the computational resources of the underlying system are limited (e.g. free Google Colab plan), however the project itself could potentially run on the entire dataset (more in section \ref{scalability}).
+
+
+\subsection{Data preprocessing}
+Before the actual execution of the algorithm, two actions are performed for data preprocessing:
+\begin{enumerate}
+	\item a serialization of the IDs, both for users and businesses, in order to construct lighter tables in the following steps. This is done using the \code{StringIndexer} feature of Spark;
+	\item split the loaded data into train and test sets, as regulated by the \code{split\_ratio} parameter.
+\end{enumerate}
+
+
 
 \label{collabfiltering}
 \section{Collaborative filtering}
