@@ -171,6 +171,20 @@ The project could be run on many computing nodes in a parallel fashion, therefor
 
 \label{futurework}
 \section{Future work}
+Many improvements and variations can be implemented.
+
+First of all, we may want to use other data on users and businesses to filter recommendations.
+For example, do not recommend to a user a business which is located very far away from the user's base location, or do not process at all permanently closed businesses.
+
+Second, we might tweak our distance measure and its processing.
+For example we could choose a complex distance which even uses the data from the users (e.g. users from the same city are considered more similar), and we could count  as neighbors only the users within a certain distance.
+More generally, we want the distance measure to be meaningful and the number of outliers to be low.
+
+Finally, other algorithms can be implemented.
+Generalizations of our approach include U/V decomposition, which uses lower dimensional matrices that approximate the review matrix alongside the missing entries.
+This algorithm also reduces the time complexity needed for the recommender system itself.
+Moreover, different paradigms can be considered, especially content based recommendation, which analyses the data on the business that a user liked in order to individuate similar ones.
+In the latter approach it could be crucial to implement a \emph{similar items} system.
 
 
 \end{multicols}
